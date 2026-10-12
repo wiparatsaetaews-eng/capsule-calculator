@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capsule Production Yield & Weight Calculator</title>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen py-8 px-4">
+    <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-5 text-white">
+            <h1 class="text-2xl font-bold">🧮 คำนวณผลผลิตและน้ำหนักการผลิตแคปซูล</h1>
+            <p class="text-indigo-100 text-sm mt-1">ระบบคำนวณ Actual Yield, น้ำหนักผงในแคปซูล และอัตราการสูญเสีย (Loss)</p>
+        </div>
+        
+        <!-- Form Content -->
+        <div class="p-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- น้ำหนักผงขาเข้า -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">น้ำหนักผงขาเข้า / ห้องผสม (Kg)</label>
+                    <input type="number" id="inputPowderWeight" step="0.001" placeholder="เช่น 20.00" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <!-- น้ำหนักแคปซูลเปล่า -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">น้ำหนักแคปซูลเปล่า (g)</label>
+                    <input type="number" id="emptyCapsuleWeight" step="0.001" placeholder="เช่น 0.14" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <!-- น้ำหนักแคปซูลรวมเฉลี่ย -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">น้ำหนักแคปซูลรวมเฉลี่ย [Mean] (mg)</label>
+                    <input type="number" id="meanCapsuleWeight" step="0.1" placeholder="เช่น 843" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <!-- จำนวนแคปซูลดีขาออก -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">จำนวนแคปซูลดีขาออก (เม็ด)</label>
+                    <input type="number" id="goodCapsulesCount" step="1" placeholder="เช่น 28534" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <!-- น้ำหนักเหลือหลังอัด -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">น้ำหนักเหลือหลังอัด / ก้นฮอปเปอร์ (Kg) [ถ้ามี]</label>
+                    <input type="number" id="remainingPowderWeight" step="0.001" placeholder="เช่น 1.89" value="0" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Button -->
+            <button onclick="calculateProduction()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-lg transition shadow-md hover:shadow-lg cursor-pointer">
+                คำนวณค่าที่เหลือ
+            </button>
+
+            <!-- Result Section -->
+            <div id="resultSection" class="hidden mt-6 bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4">
+                <h2 class="text-lg font-semibold text-slate-800 border-b pb-2">📊 สรุปผลการคำนวณ</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="bg-white p-3.5 rounded-lg border border-slate-100 shadow-2xs">
+                        <span class="text-slate-500 block">น้ำหนักผงสุทธิ (ต่อเม็ด):</span>
+                        <span id="powderPerCapsule" class="text-lg font-bold text-indigo-600">-</span>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-lg border border-slate-100 shadow-2xs">
+                        <span class="text-slate-500 block">น้ำหนักรวมผงในแคปซูลดี:</span>
+                        <span id="totalGoodPowderWeight" class="text-lg font-bold text-indigo-600">-</span>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-lg border border-slate-100 shadow-2xs">
+                        <span class="text-slate-500 block">Actual Yield:</span>
+                        <span id="actualYield" class="text-lg font-bold text-emerald-600">-</span>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-lg border border-slate-100 shadow-2xs">
+                        <span class="text-slate-500 block">ของเสีย / น้ำหนักสูญหาย (Loss):</span>
+                        <span id="lossWeight" class="text-lg font-bold text-rose-600">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        function calculateProduction() {
+            const inputPowder = parseFloat(document.getElementById('inputPowderWeight').value) || 0;
+            const emptyCap = parseFloat(document.getElementById('emptyCapsuleWeight').value) || 0; // กรัม (g)
+            const meanCapMg = parseFloat(document.getElementById('meanCapsuleWeight').value) || 0; // มิลลิกรัม (mg)
+            const goodCount = parseInt(document.getElementById('goodCapsulesCount').value) || 0;
+            const remainingPowder = parseFloat(document.getElementById('remainingPowderWeight').value) || 0;
+
+            if (inputPowder <= 0 || meanCapMg <= 0 || goodCount <= 0) {
+                alert('กรุณากรอกข้อมูลตัวเลขหลักให้ครบถ้วนก่อนคำนวณครับ');
+                return;
+            }
+
+            // แปลงหน่วยน้ำหนักแคปซูลเฉลี่ยจาก mg เป็น g
+            const meanCapG = meanCapMg / 1000;
+            const powderPerCapG = meanCapG - emptyCap; // g ต่อเม็ด
+            const powderPerCapMg = powderPerCapG * 1000; // mg ต่อเม็ด
+
+            // น้ำหนักรวมผงในแคปซูลดีทั้งหมด (Kg) = (จำนวนแคปซูล * น้ำหนักผงต่อเม็ด(g)) / 1000
+            const totalGoodPowderKg = (goodCount * powderPerCapG) / 1000;
+
+            // Actual Yield (%) = (น้ำหนักผงในแคปซูลดี / น้ำหนักผงขาเข้า) * 100
+            const actualYield = (totalGoodPowderKg / inputPowder) * 100;
+
+            // คำนวณ Loss (Kg และ %)
+            const lossKg = inputPowder - totalGoodPowderKg - remainingPowder;
+            const lossPercent = (lossKg / inputPowder) * 100;
+
+            // แสดงผลลัพธ์
+            document.getElementById('powderPerCapsule').innerText = `${powderPerCapMg.toFixed(2)} mg (${powderPerCapG.toFixed(4)} g)`;
+            document.getElementById('totalGoodPowderWeight').innerText = `${totalGoodPowderKg.toFixed(3)} kg`;
+            document.getElementById('actualYield').innerText = `${actualYield.toFixed(2)} %`;
+            document.getElementById('lossWeight').innerText = `${lossKg.toFixed(3)} kg (${lossPercent.toFixed(2)}%)`;
+
+            document.getElementById('resultSection').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
